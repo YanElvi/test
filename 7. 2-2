@@ -1,57 +1,4 @@
-#include <iostream>
-#include <map>
-#include <string>
-#include <tuple>
-#include <vector>
-#include <array>
-
-using namespace std;
-
-// Перечислимый тип для статуса задачи
-enum class TaskStatus {
-    NEW,          // новая
-    IN_PROGRESS,  // в разработке
-    TESTING,      // на тестировании
-    DONE          // завершена
-};
-
-// Объявляем тип-синоним для map<TaskStatus, int>,
-// позволяющего хранить количество задач каждого статуса
-using TasksInfo = map<TaskStatus, int>;
-
-
-class TeamTasks {
-public:
-    // Получить статистику по статусам задач конкретного разработчика
-    TasksInfo GetPersonTasksInfo(const string& person) const{
-        
-        auto it = all_tasks_.find(person);
-        
-        if (it != all_tasks_.end()) {
-            return it->second;
-        } 
-        
-        else {
-            return TasksInfo();
-        }
-    }
-
-    // Добавить новую задачу (в статусе NEW) для конкретного разработчитка
-    void AddNewTask(const string& person){
-        all_tasks_[person][TaskStatus::NEW] += 1;
-    }
-
-    // Обновить статусы по данному количеству задач конкретного разработчика,
-    // подробности см. ниже
-
-    const array<TaskStatus, 4> STATUSES = {
-        TaskStatus::NEW, 
-        TaskStatus::IN_PROGRESS, 
-        TaskStatus::TESTING, 
-        TaskStatus::DONE
-    };
-
-    tuple<TasksInfo, TasksInfo> PerformPersonTasks(const string& person, int task_count){
+tuple<TasksInfo, TasksInfo> PerformPersonTasks(const string& person, int task_count){
         
         TasksInfo updated_tasks;
         TasksInfo untoched_tasks = all_tasks_[person];
@@ -71,7 +18,7 @@ public:
         int update = 0;
         int tasks_in_current_status = 0;
 
-        for (size_t i = 0; i < STATUSES.size() - 1; i++){
+        for (size_t i = 0; i < STATUSES.size()-1; i++){
             
             if (task_to_update == 0){
                 break;
@@ -81,7 +28,6 @@ public:
             
             if (task_to_update > tasks_in_current_status){
                 update = tasks_in_current_status;
-                
             }
             else{
                 update = task_to_update;
@@ -97,27 +43,22 @@ public:
             all_tasks_[person][STATUSES[i]] -= updated_tasks[STATUSES[i+1]];
             all_tasks_[person][STATUSES[i+1]] += updated_tasks[STATUSES[i+1]];
         } 
+        
+        TasksInfo untoched_tasks_a = untoched_tasks;
+        TasksInfo updated_tasks_a = updated_tasks;
 
-        untoched_tasks[STATUSES[3]] = 0;
-        updated_tasks[STATUSES[3]] = 0;
+        for (const auto& task : untoched_tasks_a){
+            if (task.second == 0){
+                untoched_tasks.erase(task.first);
+            }
+        }
+        
+        for (const auto& task : updated_tasks_a){
+        if (task.second == 0){
+                updated_tasks.erase(task.first);
+            }
+        }
+        
+        untoched_tasks.erase(STATUSES[3]);
         return make_tuple(updated_tasks, untoched_tasks);
     }
-
-    void PrintAllTasks(const string& person){
-        cout << person << " || New : "s <<all_tasks_[person][TaskStatus::NEW] << " || In Progress : "s << all_tasks_[person][TaskStatus::IN_PROGRESS] 
-        << " || Test : "s << all_tasks_[person][TaskStatus::TESTING] << " || Done: " << all_tasks_[person][TaskStatus::DONE] << endl;
-    }
-
-    private:
-    map <string, map<TaskStatus, int>> all_tasks_;
-};
-
-// Принимаем словарь по значению, чтобы иметь возможность
-// обращаться к отсутствующим ключам с помощью [] и получать 0,
-// не меняя при этом исходный словарь.
-void PrintTasksInfo(TasksInfo tasks_info) {
-    cout << tasks_info[TaskStatus::NEW] << " new tasks"s
-         << ", "s << tasks_info[TaskStatus::IN_PROGRESS] << " tasks in progress"s
-         << ", "s << tasks_info[TaskStatus::TESTING] << " tasks are being tested"s
-         << ", "s << tasks_info[TaskStatus::DONE] << " tasks are done"s << endl;
-}
